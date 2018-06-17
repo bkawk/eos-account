@@ -1,0 +1,19 @@
+{
+  "name": "eos-account",
+  "main": "eos-account.js",
+  "version": "1.0.0",
+  "author": "@bkawk",
+  "license": "MIT",
+  "repository": "https://github.com/bkawk/eos-account",
+  "dependencies": {
+    "@polymer/polymer": "^3.0.0",
+    "polymer-aes": "^1.0.0",
+    "polymer-bip39": "^1.0.4",
+    "polymer-scrypt": "^1.0.0"
+  },
+  "devDependencies": {
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
+    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "wct-browser-legacy": "^1.0.0"
+  }
+}
