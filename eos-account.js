@@ -2,6 +2,7 @@ import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
 import 'polymer-aes';
 import 'polymer-bip39';
 import 'polymer-scrypt';
+import 'polymer-backup';
 /**
  * `eos-account`
  * 
@@ -20,6 +21,7 @@ class EosAccount extends PolymerElement {
       </style>
       <polymer-bip39 id="bip39"></polymer-bip39>
       <polymer-aes id="aes"></polymer-aes>
+      <polymer-backup id="backup"></polymer-backup>
       <template is="dom-if" if="{{debug}}">
         <small>{{mnemonic}}</small></br>
         <small>{{seed}}</small></br>
@@ -87,22 +89,11 @@ class EosAccount extends PolymerElement {
     })
     .then((data) => {
       this.encryptedKey = data;
-      this._download('bloxador', data)
+      return this.$.backup._backup('bloxador', this.encryptedKey, "keychain")
     })
     .catch((err) => {
       this.error = err;
     })
   }
-
-  _download(name, data) {
-    const filename = `${name}_${+new Date()}.keychain`;
-    const popup = window.document.createElement('a');
-    popup.target = '_blank';
-    popup.href = window.URL.createObjectURL(new Blob([data], {type: 'text/csv'}));
-    popup.download = filename;
-    document.body.appendChild(popup);
-    popup.click();
-    document.body.removeChild(popup);
-}
 
 } window.customElements.define('eos-account', EosAccount);

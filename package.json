@@ -8,6 +8,7 @@
   "dependencies": {
     "@polymer/polymer": "^3.0.0",
     "polymer-aes": "^1.0.0",
+    "polymer-backup": "git+https://github.com/bkawk/polymer-backup.git",
     "polymer-bip39": "^1.0.4",
     "polymer-scrypt": "^1.0.0"
   },
