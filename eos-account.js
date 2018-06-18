@@ -144,6 +144,14 @@ class EosAccount extends PolymerElement {
     })
   }
 
+  _deleteAccount(){
+    this.$.store.delete('EOSAccount')
+  }
+
+  _restoreAcount(){
+
+  }
+
   _backupAcount(){
 
     const eosAccount = {  
