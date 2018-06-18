@@ -179,6 +179,8 @@ class EosAccount extends PolymerElement {
     })
   }
 
+  // TODO restore from mnominic 
+
   _restoreAcount(){
     this.restoreAcount(this.restoreData, this.password)
     .catch((err) => {
@@ -243,7 +245,13 @@ class EosAccount extends PolymerElement {
       })
       .then((data) => {
         if (JSON.parse(data[0])[1] != JSON.parse(data[1]).hash) throw 'wrong password'
-        this.$.backup._backup(this.fileName, data[1], "keychain")
+        return this.lockAccount(password)
+      })
+      .then(() => {
+        return this.$.store.get('EOSAccount')
+      })
+      .then((data) => {
+        this.$.backup._backup(this.fileName, data, "keychain")
         resolve('backed up')
       })
       .catch((err) => {
