@@ -7,9 +7,10 @@
   "repository": "https://github.com/bkawk/eos-account",
   "dependencies": {
     "@polymer/polymer": "^3.0.0",
-    "polymer-aes": "^1.0.0",
+    "polymer-aes": "^1.0.1",
     "polymer-backup": "git+https://github.com/bkawk/polymer-backup.git",
-    "polymer-bip39": "^1.0.4",
+    "polymer-bip39": "^1.0.6",
+    "polymer-restore": "^1.0.0",
     "polymer-scrypt": "^1.0.0",
     "polymer-store": "^1.0.1"
   },
