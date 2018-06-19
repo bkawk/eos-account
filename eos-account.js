@@ -1,7 +1,6 @@
 import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
 import 'polymer-aes';
 import 'polymer-bip39';
-import 'polymer-scrypt';
 import 'polymer-backup';
 import 'polymer-store';
 import 'polymer-restore';
@@ -22,13 +21,11 @@ class EosAccount extends PolymerElement {
           display: block;
         }
       </style>
-
       <polymer-bip39 id="bip39"></polymer-bip39>
       <polymer-aes id="aes"></polymer-aes>
-      <polymer-backup id="backup"></polymer-backup>
       <polymer-store id="store"></polymer-store>
+      <polymer-backup id="backup"></polymer-backup>
 
-      
       <template is="dom-if" if="{{debug}}">
       Password: <input type="password" id="password" on-keyup="_changePassword" value="{{password}}"></br></br>
         <a href="#" on-click="_createAcount">Create Account</a></br></br>
@@ -96,6 +93,12 @@ class EosAccount extends PolymerElement {
     })
   }
 
+
+  _createIdentity(){
+    // is the account unlocked?
+    // move this to a new component 
+    const identity =   { "hash": "", "privateKey": "", "publicKey": "", "name": "", "accounts": {}, "personal": { "firstname": "", "lastname": "", "email": "", "birthdate": "" }, "locations": [ { "name": "Unnamed Location", "isDefault": false, "phone": "", "address": "", "city": "", "state": "", "country": "", "zipcode": "" } ], "kyc": false, "ridl": -1 }
+  }
 
   _lockAccount(){
     this.lockAccount(this.password)
@@ -179,7 +182,9 @@ class EosAccount extends PolymerElement {
     })
   }
 
+  // new acocunts get a default identitty 
   // TODO restore from mnominic 
+  // TODO make a function that just checks the password, we cant store the hash in plain text, maybe make a second entry into local storage with just an empy object thats encrypted with the password when the account is first made or the password is changed 
 
   _restoreAcount(){
     this.restoreAcount(this.restoreData, this.password)
@@ -262,3 +267,55 @@ class EosAccount extends PolymerElement {
   }
 
 } window.customElements.define('eos-account', EosAccount);
+
+
+
+// {
+// 	"meta": {
+// 		"version": "6.0.4",
+// 		"extensionId": "ammjpmhgckkpcamddpolhchgomcojkle",
+// 		"lastVersion": "0",
+// 		"acceptedTerms": false
+// 	},
+// 	"keychain": {
+// 		"keypairs": [],
+		//"identities": [
+			// {
+			// 	"hash": "a551a01d9f90d6f1bd6bda737c4369b2a712d334d736c1941c80372f4c3ebee6",
+			// 	"privateKey": "{\"iv\":\"tMvDoSHGNiJ6IJ2Q0oF+VQ==\",\"salt\":\"d7wLRYNXL7E=\",\"ct\":\"F6qRGPQ3sGaYuQ4eN9Cc06y/2riqX8kD4NI4Ip9MjwcymVX6YHbeKh++KCTJYXOwc0pGoNWk5jQvBto=\"}",
+			// 	"publicKey": "EOS58HXbPK9fQoq5SGr1B5MhErPwjZbCDTNoyVuRn3sipQmHThymi",
+			// 	"name": "RandomRabbit8993773",
+			// 	"accounts": {},
+			// 	"personal": {
+			// 		"firstname": "",
+			// 		"lastname": "",
+			// 		"email": "",
+			// 		"birthdate": ""
+			// 	},
+			// 	"locations": [
+			// 		{
+			// 			"name": "Unnamed Location",
+			// 			"isDefault": false,
+			// 			"phone": "",
+			// 			"address": "",
+			// 			"city": "",
+			// 			"state": "",
+			// 			"country": "",
+			// 			"zipcode": ""
+			// 		}
+			// 	],
+			// 	"kyc": false,
+			// 	"ridl": -1
+			// }
+// 		],
+// 		"permissions": []
+// 	},
+// 	"settings": {
+// 		"networks": [],
+// 		"hasEncryptionKey": true,
+// 		"inactivityInterval": 0,
+// 		"language": "ENGLISH"
+// 	},
+// 	"histories": [],
+// 	"hash": "a551a01d9f90d6f1bd6bda737c4369b2a712d334d736c1941c80372f4c3ebee6"
+// }
