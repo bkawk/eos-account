@@ -4,6 +4,7 @@ import 'polymer-bip39';
 import 'polymer-backup';
 import 'polymer-store';
 import 'polymer-restore';
+import 'eos-identity';
 
 /*
  * `eos-account`
@@ -25,10 +26,12 @@ class EosAccount extends PolymerElement {
       <polymer-aes id="aes"></polymer-aes>
       <polymer-store id="store"></polymer-store>
       <polymer-backup id="backup"></polymer-backup>
+      <eos-identity id="identity"></eos-identity>
 
       <template is="dom-if" if="{{debug}}">
       Password: <input type="password" id="password" on-keyup="_changePassword" value="{{password}}"></br></br>
         <a href="#" on-click="_createAcount">Create Account</a></br></br>
+        <a href="#" on-click="_createIdentity">Create Identity</a></br></br>
         <a href="#" on-click="_deleteAccount">Delete Account</a></br></br>
         <a href="#" on-click="_lockAccount">Lock Account</a></br></br>
         <a href="#" on-click="_unlockAccount">Unlock Account</a></br></br>
@@ -59,21 +62,20 @@ class EosAccount extends PolymerElement {
       fileName: {
         type: String,
       },
+      accountName: {
+        type: String,
+        value: 'name'
+      },
     };
   }
 
-  _changePassword(e){
-    const password = this.shadowRoot.querySelector('#password').value;
-    this.password = password;
-  }
-
   _createAcount(){
-    this.createAcount(this.password)
+    this.createAcount(this.password, this.name)
     .catch((err) => {
       this.error = err;
     })
   }
-  createAcount(password){
+  createAcount(password, name){
     return new Promise((resolve, reject) => {
       let eosAccount = {"meta":{"version":"5.0.4","extensionId":"","lastVersion":"1.0.0"},"keychain":{"keypairs":[],"identities":[],"permissions":[]},"settings":{"networks":[],"hasEncryptionKey":true,"inactivityInterval":0,"language":"ENGLISH"},"histories":[],"hash":""}
       this.state()
@@ -83,7 +85,10 @@ class EosAccount extends PolymerElement {
       })
       .then((mnemonic) => {
         eosAccount.hash = JSON.parse(mnemonic)[1];
-        this.$.store.set('EOSAccount', JSON.stringify(eosAccount));
+        return this.$.store.set('EOSAccount', JSON.stringify(eosAccount));
+      })
+      .then(() => {
+        this.createIdentity(password, name)
         resolve('created')
       })
       .catch((err) => {
@@ -95,10 +100,21 @@ class EosAccount extends PolymerElement {
 
 
   _createIdentity(){
-    // is the account unlocked?
-    // move this to a new component 
-    const identity =   { "hash": "", "privateKey": "", "publicKey": "", "name": "", "accounts": {}, "personal": { "firstname": "", "lastname": "", "email": "", "birthdate": "" }, "locations": [ { "name": "Unnamed Location", "isDefault": false, "phone": "", "address": "", "city": "", "state": "", "country": "", "zipcode": "" } ], "kyc": false, "ridl": -1 }
+    this.createIdentity(this.password, this.accountName)
+    .catch((err) => {
+      this.error = err;
+    })
   }
+  createIdentity(password, name){
+    return new Promise((resolve, reject) => {
+      this.state()
+      .then((state) => {
+        if(state !== 'unlocked') throw 'not unlocked'
+        this.$.identity.createIdentity(this.password, 'name')
+      })
+    })
+  }
+
 
   _lockAccount(){
     this.lockAccount(this.password)
@@ -111,11 +127,13 @@ class EosAccount extends PolymerElement {
       this.state()
       .then((state) => {
         if(state !== 'unlocked')throw 'not unlocked'
+        return this.checkPassword(password);
+      })
+      .then(() => {
         return Promise.all([this.$.bip39.mnemonicfromPassword(password), this.$.store.get('EOSAccount')])
       })
       .then((data) => {
-        if (JSON.parse(data[0])[1] != JSON.parse(data[1]).hash) throw 'wrong password'
-        return this.$.aes.encrypt(JSON.parse(data[0])[1], data[1])
+        return this.$.aes.encrypt(JSON.parse(data[0])[1], JSON.parse(data[1]))
       })
       .then((data) => {
         this.$.store.set('EOSAccount', data)
@@ -167,11 +185,13 @@ class EosAccount extends PolymerElement {
     return new Promise((resolve, reject) => {
       this.state()
       .then((state) => {
-        if(state == 'locked') this.unlockAccount(password)
+        if(state == 'locked') throw 'locked'
+        return this.checkPassword(password);
+      })
+      .then(() => {
         return Promise.all([this.$.bip39.mnemonicfromPassword(password), this.$.store.get('EOSAccount')])
       })
       .then((data) => {
-        if (JSON.parse(data[0])[1] != JSON.parse(data[1]).hash) throw 'wrong password'
         this.$.store.delete('EOSAccount')
         resolve('deleted')
       })
@@ -182,9 +202,6 @@ class EosAccount extends PolymerElement {
     })
   }
 
-  // new acocunts get a default identitty 
-  // TODO restore from mnominic 
-  // TODO make a function that just checks the password, we cant store the hash in plain text, maybe make a second entry into local storage with just an empy object thats encrypted with the password when the account is first made or the password is changed 
 
   _restoreAcount(){
     this.restoreAcount(this.restoreData, this.password)
@@ -212,6 +229,46 @@ class EosAccount extends PolymerElement {
     })
   }
 
+  
+  _backupAcount(){
+    this.backupAcount(this.password)
+    .catch((err) => {
+      this.error = err;
+    })
+  }
+  backupAcount(password){
+    return new Promise((resolve, reject) => {
+      this.state()
+      .then((state) => {
+        if(state == 'locked') throw 'locked'
+        return this.checkPassword(password);
+      })
+      .then((data) => {
+        return Promise.all([this.$.bip39.mnemonicfromPassword(password), this.$.store.get('EOSAccount')])
+      })
+      .then((data) => {
+        return this.lockAccount(password)
+      })
+      .then(() => {
+        return this.$.store.get('EOSAccount')
+      })
+      .then((data) => {
+        this.$.backup._backup(this.fileName, data, "keychain")
+        resolve('backed up')
+      })
+      .catch((err) => {
+        this.error = err;
+        reject(this.error)
+      })
+    })
+  }
+
+
+  _changePassword(e){
+    const password = this.shadowRoot.querySelector('#password').value;
+    this.password = password;
+  }
+
   state(){
     return new Promise((resolve, reject) => {
       this.$.store.get('EOSAccount')
@@ -235,29 +292,21 @@ class EosAccount extends PolymerElement {
     })
   }
 
-  _backupAcount(){
-    this.backupAcount(this.password)
-    .catch((err) => {
-      this.error = err;
-    })
-  }
-  backupAcount(password){
+  checkPassword(password){
     return new Promise((resolve, reject) => {
       this.state()
       .then((state) => {
-        if(state == 'locked') this.unlockAccount(password)
+        if(state !== 'unlocked')throw 'locked'
         return Promise.all([this.$.bip39.mnemonicfromPassword(password), this.$.store.get('EOSAccount')])
       })
       .then((data) => {
-        if (JSON.parse(data[0])[1] != JSON.parse(data[1]).hash) throw 'wrong password'
-        return this.lockAccount(password)
-      })
-      .then(() => {
-        return this.$.store.get('EOSAccount')
+        const key = JSON.parse(data[0])[1];
+        const account = JSON.parse(data[1]);
+        const encryptedPrivateKey = account.keychain.identities[0].privateKey;
+        return this.$.aes.decrypt(key, encryptedPrivateKey)
       })
       .then((data) => {
-        this.$.backup._backup(this.fileName, data, "keychain")
-        resolve('backed up')
+        resolve(true)
       })
       .catch((err) => {
         this.error = err;
@@ -267,55 +316,3 @@ class EosAccount extends PolymerElement {
   }
 
 } window.customElements.define('eos-account', EosAccount);
-
-
-
-// {
-// 	"meta": {
-// 		"version": "6.0.4",
-// 		"extensionId": "ammjpmhgckkpcamddpolhchgomcojkle",
-// 		"lastVersion": "0",
-// 		"acceptedTerms": false
-// 	},
-// 	"keychain": {
-// 		"keypairs": [],
-		//"identities": [
-			// {
-			// 	"hash": "a551a01d9f90d6f1bd6bda737c4369b2a712d334d736c1941c80372f4c3ebee6",
-			// 	"privateKey": "{\"iv\":\"tMvDoSHGNiJ6IJ2Q0oF+VQ==\",\"salt\":\"d7wLRYNXL7E=\",\"ct\":\"F6qRGPQ3sGaYuQ4eN9Cc06y/2riqX8kD4NI4Ip9MjwcymVX6YHbeKh++KCTJYXOwc0pGoNWk5jQvBto=\"}",
-			// 	"publicKey": "EOS58HXbPK9fQoq5SGr1B5MhErPwjZbCDTNoyVuRn3sipQmHThymi",
-			// 	"name": "RandomRabbit8993773",
-			// 	"accounts": {},
-			// 	"personal": {
-			// 		"firstname": "",
-			// 		"lastname": "",
-			// 		"email": "",
-			// 		"birthdate": ""
-			// 	},
-			// 	"locations": [
-			// 		{
-			// 			"name": "Unnamed Location",
-			// 			"isDefault": false,
-			// 			"phone": "",
-			// 			"address": "",
-			// 			"city": "",
-			// 			"state": "",
-			// 			"country": "",
-			// 			"zipcode": ""
-			// 		}
-			// 	],
-			// 	"kyc": false,
-			// 	"ridl": -1
-			// }
-// 		],
-// 		"permissions": []
-// 	},
-// 	"settings": {
-// 		"networks": [],
-// 		"hasEncryptionKey": true,
-// 		"inactivityInterval": 0,
-// 		"language": "ENGLISH"
-// 	},
-// 	"histories": [],
-// 	"hash": "a551a01d9f90d6f1bd6bda737c4369b2a712d334d736c1941c80372f4c3ebee6"
-// }
